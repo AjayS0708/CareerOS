@@ -1,8 +1,29 @@
-import React from 'react';
-import { Search, Bell, Menu, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Bell, Menu, ChevronDown, LogOut, User, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '../common';
+import { logout, getStoredUser } from '../../services/authService';
 
-const Header = ({ onMenuClick, user }) => {
+const Header = ({ onMenuClick }) => {
+  const navigate = useNavigate();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const user = getStoredUser();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
+
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
   return (
     <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
       <div className="flex items-center justify-between px-6 py-4">
@@ -44,17 +65,66 @@ const Header = ({ onMenuClick, user }) => {
           </button>
 
           {/* User Profile Dropdown */}
-          <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
+          <div className="relative flex items-center gap-3 pl-4 border-l border-gray-200">
             <div className="hidden sm:block text-right">
-              <p className="text-sm font-semibold text-text">Ankit Sharma</p>
-              <p className="text-xs text-text-light">Frontend Developer</p>
+              <p className="text-sm font-semibold text-text">{user?.name || 'User'}</p>
+              <p className="text-xs text-text-light">{user?.currentRole || 'Job Seeker'}</p>
             </div>
-            <button className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent to-purple-400 flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">AS</span>
+                <span className="text-white font-semibold text-sm">
+                  {getInitials(user?.name)}
+                </span>
               </div>
               <ChevronDown className="w-4 h-4 text-text-light hidden sm:block" />
             </button>
+
+            {/* Dropdown Menu */}
+            {showDropdown && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowDropdown(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-elevated border border-gray-200 py-2 z-20">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-semibold text-text">{user?.name}</p>
+                    <p className="text-xs text-text-light">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowDropdown(false);
+                      navigate('/settings');
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-text hover:bg-gray-50 flex items-center gap-3"
+                  >
+                    <User className="w-4 h-4" />
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDropdown(false);
+                      navigate('/settings');
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-text hover:bg-gray-50 flex items-center gap-3"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </button>
+                  <div className="border-t border-gray-200 my-2" />
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Log Out
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
