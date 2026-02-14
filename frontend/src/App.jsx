@@ -1,7 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { Layout } from './components/layout';
 import DashboardPage from './pages/DashboardPage';
+import JobSearchPage from './pages/JobSearchPage';
 import PlaceholderPage from './pages/PlaceholderPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -15,6 +17,29 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <Router>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#0F172A',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          },
+          success: {
+            iconTheme: {
+              primary: '#10B981',
+              secondary: '#fff',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#EF4444',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
@@ -29,15 +54,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Navigate to="/dashboard" replace />} />
                   <Route path="/dashboard" element={<DashboardPage />} />
-                  <Route 
-                    path="/jobs" 
-                    element={
-                      <PlaceholderPage 
-                        title="Job Search" 
-                        description="Discover thousands of job opportunities across multiple platforms."
-                      />
-                    } 
-                  />
+                  <Route path="/jobs" element={<JobSearchPage />} />
                   <Route 
                     path="/applications" 
                     element={

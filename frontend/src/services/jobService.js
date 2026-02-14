@@ -55,3 +55,15 @@ export const deleteJob = async (jobId) => {
   const response = await apiClient.delete(`/jobs/${jobId}`);
   return response.data;
 };
+
+// Track job view
+export const trackJobView = async (jobId) => {
+  const response = await apiClient.post(`/jobs/${jobId}/track-view`);
+  return response.data;
+};
+
+// Track job redirect/application
+export const trackJobRedirect = async (jobId) => {
+  const response = await apiClient.post(`/jobs/${jobId}/track-redirect`);
+  return response.data;
+};

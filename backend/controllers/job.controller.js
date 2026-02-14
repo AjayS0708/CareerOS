@@ -280,3 +280,61 @@ export const getJobStats = async (req, res) => {
     },
   });
 };
+
+// @desc    Track job view
+// @route   POST /api/v1/jobs/:id/track-view
+// @access  Private
+export const trackJobView = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Job not found',
+      });
+    }
+
+    await job.incrementViewCount();
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'View tracked successfully',
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Error tracking view',
+      error: error.message,
+    });
+  }
+};
+
+// @desc    Track job redirect/application click
+// @route   POST /api/v1/jobs/:id/track-redirect
+// @access  Private
+export const trackJobRedirect = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        message: 'Job not found',
+      });
+    }
+
+    await job.incrementApplicationCount();
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Redirect tracked successfully',
+    });
+  } catch (error) {
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Error tracking redirect',
+      error: error.message,
+    });
+  }
+};
