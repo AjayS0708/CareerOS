@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import mongoSanitize from 'express-mongo-sanitize';
 import 'express-async-errors';
 import { config } from './config/config.js';
 import connectDB from './utils/db.js';
@@ -18,13 +19,16 @@ const app = express();
 connectDB();
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10kb' })); // Body size limit for security
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(cors({
   origin: config.CORS_ORIGIN,
   credentials: true
 }));
 app.use(helmet());
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
 
 // Logging middleware in development
 if (config.NODE_ENV === 'development') {

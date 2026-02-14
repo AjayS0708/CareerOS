@@ -36,8 +36,8 @@ export const protect = async (req, res, next) => {
       });
     }
 
-    // Check if account is locked
-    if (user.isLocked) {
+    // Check if account is locked (check lockUntil directly, not virtual)
+    if (user.lockUntil && user.lockUntil > Date.now()) {
       return res.status(StatusCodes.FORBIDDEN).json({
         success: false,
         message: 'Account is temporarily locked. Please try again later.',
@@ -49,6 +49,7 @@ export const protect = async (req, res, next) => {
       id: user._id,
       email: user.email,
       name: user.name,
+      role: user.role,
     };
 
     next();

@@ -2,6 +2,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Validate critical environment variables
+if (!process.env.JWT_SECRET) {
+  throw new Error('FATAL ERROR: JWT_SECRET is not defined in environment variables');
+}
+
 export const config = {
   // Server
   NODE_ENV: process.env.NODE_ENV || 'development',
@@ -12,7 +17,7 @@ export const config = {
   
   // JWT
   JWT_SECRET: process.env.JWT_SECRET,
-  JWT_EXPIRE: process.env.JWT_EXPIRE,
+  JWT_EXPIRE: process.env.JWT_EXPIRE || '7d',
   JWT_COOKIE_EXPIRE: process.env.JWT_COOKIE_EXPIRE,
   
   // Security

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { config } from '../config/config.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -26,6 +27,11 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Please provide a password'],
       minlength: [6, 'Password must be at least 6 characters'],
       select: false, // Don't return password by default
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
     },
     avatar: {
       type: String,
@@ -83,7 +89,6 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes for better query performance
-userSchema.index({ email: 1 });
 userSchema.index({ createdAt: -1 });
 
 // Virtual for account lock status
@@ -92,14 +97,13 @@ userSchema.virtual('isLocked').get(function () {
 });
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
 // Method to compare password
@@ -110,7 +114,7 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 // Method to generate JWT token
 userSchema.methods.generateAuthToken = function () {
   return jwt.sign(
-    { id: this._id, email: this.email },
+    { id: this._id, email: this.email, role: this.role },
     process.env.JWT_SECRET,
     {
       expiresIn: process.env.JWT_EXPIRE || '7d',
@@ -118,34 +122,42 @@ userSchema.methods.generateAuthToken = function () {
   );
 };
 
-// Method to increment login attempts
-userSchema.methods.incLoginAttempts = function () {
+// Method to increment login attempts (atomic operation to prevent race conditions)
+userSchema.methods.incLoginAttempts = async function () {
   // If we have a previous lock that has expired, restart at 1
   if (this.lockUntil && this.lockUntil < Date.now()) {
-    return this.updateOne({
-      $set: { loginAttempts: 1 },
-      $unset: { lockUntil: 1 },
-    });
+    return await User.findByIdAndUpdate(
+      this._id,
+      {
+        $set: { loginAttempts: 1 },
+        $unset: { lockUntil: 1 },
+      },
+      { new: true }
+    );
   }
 
   const updates = { $inc: { loginAttempts: 1 } };
-  const maxAttempts = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
+  const maxAttempts = config.MAX_LOGIN_ATTEMPTS;
 
-  // Lock account after max attempts
-  if (this.loginAttempts + 1 >= maxAttempts && !this.isLocked) {
-    const lockTime = parseInt(process.env.LOCK_TIME) || 2 * 60 * 60 * 1000; // 2 hours
-    updates.$set = { lockUntil: Date.now() + lockTime };
+  // Lock account after max attempts (atomic check and update)
+  const currentAttempts = this.loginAttempts + 1;
+  if (currentAttempts >= maxAttempts && !this.isLocked) {
+    updates.$set = { lockUntil: Date.now() + config.LOCK_TIME };
   }
 
-  return this.updateOne(updates);
+  return await User.findByIdAndUpdate(this._id, updates, { new: true });
 };
 
-// Method to reset login attempts
-userSchema.methods.resetLoginAttempts = function () {
-  return this.updateOne({
-    $set: { loginAttempts: 0 },
-    $unset: { lockUntil: 1 },
-  });
+// Method to reset login attempts (atomic operation)
+userSchema.methods.resetLoginAttempts = async function () {
+  return await User.findByIdAndUpdate(
+    this._id,
+    {
+      $set: { loginAttempts: 0 },
+      $unset: { lockUntil: 1 },
+    },
+    { new: true }
+  );
 };
 
 const User = mongoose.model('User', userSchema);
